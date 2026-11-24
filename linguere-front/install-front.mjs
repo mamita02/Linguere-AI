@@ -1,0 +1,21 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+const dir=path.dirname(fileURLToPath(import.meta.url));
+const file='src/main.jsx';
+let s=fs.readFileSync(file,'utf8');
+function replace(a,b){if(!s.includes(a))throw Error('Version du fichier différente : '+a.slice(0,90));s=s.replace(a,b);}
+replace("import './style.css';","import './style.css';import {PublicPage} from './Public.jsx';import {Admin} from './Admin.jsx';");
+replace("const[session,S]=useState(null)","const[screen,setScreen]=useState('home'),[ready,setReady]=useState(false);const[session,S]=useState(null)");
+replace("const admin=mode==='demo'||profile?.role==='super_admin';","const admin=profile?.role==='super_admin';");
+replace("if(p.role==='super_admin'){const{data:o}=await sb.from('companies').select('*');O(o||[]);}","if(p.role==='super_admin'){const{data:o,error:oe}=await sb.from('companies').select('*');O(o||[]);if(oe)N(oe.message);}");
+replace("useEffect(()=>{if(sb){sb.auth.getSession().then(({data})=>{if(data.session){M('live');load();}})}},[]);","useEffect(()=>{(async()=>{try{if(sb){const{data}=await sb.auth.getSession();if(data.session){M('live');await load();}}}catch(e){N(e.message)}finally{setReady(true)}})()},[]);\nuseEffect(()=>{if(profile){T(profile.role==='super_admin'?'Administration':'Accueil')}},[profile?.id,profile?.role]);");
+replace("async function login(e){e.preventDefault();const{error}=await sb.auth.signInWithPassword({email,password});if(error)N(error.message);else{M('live');await load();}}","async function login(e){e.preventDefault();if(!sb)return;U(true);N('');try{const{error}=await sb.auth.signInWithPassword({email,password});if(error)throw error;M('live');await load();W('');}catch(e){N(e.message)}finally{U(false)}}");
+replace("function switchDemo(){S(null);P(null);O([]);J([]);F([]);M('demo');R(demo);B('pro');A(regions.slice(0,7));L(JSON.parse(localStorage.getItem('ling-demo-leads')||'[]'));T('Accueil');N('');}","function switchDemo(){S(null);P(null);O([]);J([]);F([]);M('demo');R([]);L([]);D(null);W('');T('Accueil');N('');setScreen('home');}");
+replace('return <div className="layout"><aside>',`if(!ready)return <div className="lp"><p>Chargement de votre espace…</p></div>;
+if(!session||!profile)return <PublicPage {...{screen,setScreen,email,E,password,W,login,notice,busy,configured:!!sb}}/>;
+if(admin)return <div className="layout"><aside><div className="brand"><b>L</b><div>LINGUERE AI<small>Mame Fatou Wade</small></div></div><div className="workspace">SUPER ADMIN</div><nav><button className="active">⚙ Clients & abonnements</button><button onClick={async()=>{await sb.auth.signOut();switchDemo()}}>Déconnexion</button></nav></aside><main><header><div><small>ADMINISTRATION</small><h1>Tableau de bord</h1></div></header>{notice&&<div className="banner" role="status">{notice}<button onClick={()=>N('')}>×</button></div>}<Admin sb={sb} orgs={orgs} reload={load} notify={N}/></main></div>;
+if(!profile.companies?.active||(profile.companies.expires_at&&Date.parse(profile.companies.expires_at)<=Date.now()))return <div className="lp"><h1>Abonnement indisponible</h1><p>Contactez l’administration pour réactiver votre accès.</p><button onClick={async()=>{await sb.auth.signOut();switchDemo()}}>Déconnexion</button></div>;
+return <div className="layout"><aside>`);
+for(const name of ['Public.jsx','Admin.jsx','public.css'])fs.copyFileSync(path.join(dir,name),path.join('src',name));
+fs.copyFileSync(file,file+'.bak');fs.writeFileSync(file,s);console.log('Frontend installé. Sauvegarde : src/main.jsx.bak');
