@@ -1094,7 +1094,16 @@ function App() {
 
         "Appels d’offres": item.kind === "appel_offres",
         Partenariats: item.kind === "partenariat",
-        "Veille concurrentielle": item.kind === "concurrence",
+        "Veille concurrentielle":
+    item.kind === "concurrence" ||
+    (
+        /tavily/i.test(
+            `${item.source_platform || ""} ${item.source || ""}`
+        ) &&
+        /entreprises de construction|cabinet d.architecture|bureau d.etudes|groupe duval|concurrence|implantation|expansion|innovation architecturale/i.test(
+            item.title || ""
+        )
+    ),
       })[tab] ?? true
   );
 
